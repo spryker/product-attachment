@@ -12,11 +12,17 @@ use Orm\Zed\ProductAttachment\Persistence\SpyProductAttachmentProductAbstractQue
 use Orm\Zed\ProductAttachment\Persistence\SpyProductAttachmentQuery;
 use Spryker\Zed\DataImport\Business\Exception\EntityNotFoundException;
 use Spryker\Zed\DataImport\Business\Model\DataImportStep\DataImportStepInterface;
+use Spryker\Zed\DataImport\Business\Model\DataImportStep\PublishAwareStep;
 use Spryker\Zed\DataImport\Business\Model\DataSet\DataSetInterface;
 use Spryker\Zed\ProductAttachment\Business\DataImport\DataSet\ProductAttachmentDataSetInterface;
 
-class ProductAttachmentWriterStep implements DataImportStepInterface
+class ProductAttachmentWriterStep extends PublishAwareStep implements DataImportStepInterface
 {
+    /**
+     * @uses \Spryker\Zed\ProductAttachment\Dependency\ProductAttachmentEvents::PRODUCT_ABSTRACT_ATTACHMENT_PUBLISH
+     */
+    protected const string PRODUCT_ABSTRACT_ATTACHMENT_PUBLISH = 'ProductAttachment.product_abstract_attachment.publish';
+
     public function __construct(
         protected SpyProductAttachmentQuery $productAttachmentQuery,
         protected SpyProductAttachmentProductAbstractQuery $productAttachmentProductAbstractQuery,
@@ -35,6 +41,11 @@ class ProductAttachmentWriterStep implements DataImportStepInterface
 
         if ($productAttachmentEntity->isNew() || $productAttachmentEntity->isModified()) {
             $productAttachmentEntity->save();
+
+            $this->addPublishEvents(
+                static::PRODUCT_ABSTRACT_ATTACHMENT_PUBLISH,
+                $productAttachmentEntity->getIdProductAttachment(),
+            );
         }
 
         $this->createProductAttachmentRelation(
