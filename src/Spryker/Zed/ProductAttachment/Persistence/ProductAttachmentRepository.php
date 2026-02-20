@@ -118,7 +118,7 @@ class ProductAttachmentRepository extends AbstractRepository implements ProductA
             return [];
         }
 
-        /** @var \Propel\Runtime\Collection\ObjectCollection $attachmentIdsWithRelations */
+        /** @var \Propel\Runtime\Collection\ArrayCollection $attachmentIdsWithRelations */
         $attachmentIdsWithRelations = $this->getFactory()
             ->createProductAttachmentProductAbstractQuery()
             ->filterByFkProductAttachment_In($attachmentIds)
