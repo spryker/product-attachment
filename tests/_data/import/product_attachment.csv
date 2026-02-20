@@ -1,0 +1,5 @@
+abstract_sku,label,locale,attachment_url,sort_order
+test_001,User Manual,en_US,https://example.com/manual-test_001.pdf,1
+test_001,Datasheet,en_US,https://example.com/datasheet-test_001.pdf,2
+test_002,Installation Guide,de_DE,https://example.com/install-test_002.pdf,1
+test_002,User Manual,en_US,https://example.com/manual-test_001.pdf,1

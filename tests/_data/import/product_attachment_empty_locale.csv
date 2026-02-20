@@ -1,0 +1,2 @@
+abstract_sku,label,locale,attachment_url,sort_order
+test_005,Empty Locale Test,,https://example.com/test-empty-locale.pdf,1

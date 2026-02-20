@@ -1,0 +1,36 @@
+{% if form.attachment_default is defined %}
+    <div class="well m-t-lg">
+        <h3>{{ 'Product Attachments' | trans }}</h3>
+        <p>{{ 'Add URL-based attachments for different locales.' | trans }}</p>
+        <p>- {{ 'Default attachments: Always displayed on the Product Detail Page (PDP), regardless of the user’s locale.' | trans }}</p>
+        <p>- {{ 'Localized attachments: Displayed on the PDP only when they match the user’s selected locale. Shown in addition to default attachments.' | trans }}</p>
+    </div>
+
+    <div class="attachment-forms">
+        {% set formKey = 'attachment_default' %}
+        {% embed '@Gui/Partials/ibox.twig' with {'collapsed': false} %}
+            {% block title %}
+                {{ 'Default' | trans }}
+            {% endblock %}
+
+            {% block content %}
+                {% include '@ProductAttachment/Product/_partials/attachment-form.twig' %}
+            {% endblock %}
+        {% endembed %}
+
+        {% for locale in localeCollection %}
+            {% set formKey = 'attachment_' ~ locale.localeName %}
+
+            {% if form[formKey] is defined %}
+                {% embed '@Gui/Partials/localized-ibox.twig' with {'collapsed': true, 'localeName': locale.localeName} %}
+                    {% block content %}
+                        {% include '@ProductAttachment/Product/_partials/attachment-form.twig' %}
+                    {% endblock %}
+                {% endembed %}
+            {% endif %}
+        {% endfor %}
+
+    </div>
+    <script src="{{ assetsPath('js/spryker-zed-product-attachment-form.js') }}"></script>
+{% endif %}
+

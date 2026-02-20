@@ -1,0 +1,60 @@
+<?xml version="1.0"?>
+<database xmlns="spryker:schema-01" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" name="zed" xsi:schemaLocation="spryker:schema-01 https://static.spryker.com/schema-01.xsd" namespace="Orm\Zed\ProductAttachment\Persistence" package="src.Orm.Zed.ProductAttachment.Persistence">
+
+    <table name="spy_product_attachment" phpName="SpyProductAttachment" identifierQuoting="true">
+        <column name="id_product_attachment" required="true" type="INTEGER" autoIncrement="true" primaryKey="true"/>
+        <column name="fk_locale" required="false" type="INTEGER"/>
+        <column name="label" required="true" size="255" type="VARCHAR"/>
+        <column name="url" required="true" size="2048" type="VARCHAR"/>
+
+        <foreign-key name="spy_product_attachment-fk_locale" foreignTable="spy_locale" phpName="Locale">
+            <reference local="fk_locale" foreign="id_locale"/>
+        </foreign-key>
+
+        <index name="spy_product_attachment-fk_locale">
+            <index-column name="fk_locale"/>
+        </index>
+
+        <behavior name="timestampable"/>
+        <behavior name="event">
+            <parameter name="spy_product_attachment_all" column="*"/>
+        </behavior>
+
+        <id-method-parameter value="spy_product_attachment_pk_seq"/>
+    </table>
+
+    <table name="spy_product_attachment_product_abstract" phpName="SpyProductAttachmentProductAbstract" identifierQuoting="true">
+        <column name="id_product_attachment_product_abstract" required="true" type="INTEGER" autoIncrement="true" primaryKey="true"/>
+        <column name="fk_product_attachment" required="true" type="INTEGER"/>
+        <column name="fk_product_abstract" required="true" type="INTEGER"/>
+        <column name="order" required="true" type="INTEGER" default="0"/>
+
+        <foreign-key name="spy_product_attachment_product_abstract-fk_product_attachment" foreignTable="spy_product_attachment" phpName="ProductAttachment" refPhpName="ProductAttachmentProductAbstract" onDelete="CASCADE">
+            <reference local="fk_product_attachment" foreign="id_product_attachment"/>
+        </foreign-key>
+
+        <foreign-key name="spy_product_attachment_product_abstract-fk_product_abstract" foreignTable="spy_product_abstract" phpName="ProductAbstract" refPhpName="ProductAttachmentProductAbstract" onDelete="CASCADE">
+            <reference local="fk_product_abstract" foreign="id_product_abstract"/>
+        </foreign-key>
+
+        <unique name="spy_product_attachment_product_abstract-unique-attachment-product">
+            <unique-column name="fk_product_attachment"/>
+            <unique-column name="fk_product_abstract"/>
+        </unique>
+
+        <index name="spy_product_attachment_product_abstract-fk_product_attachment">
+            <index-column name="fk_product_attachment"/>
+        </index>
+
+        <index name="spy_product_attachment_product_abstract-fk_product_abstract">
+            <index-column name="fk_product_abstract"/>
+        </index>
+
+        <behavior name="event">
+            <parameter name="spy_product_attachment_product_abstract_all" column="*"/>
+        </behavior>
+
+        <id-method-parameter value="spy_product_attachment_product_abstract_pk_seq"/>
+    </table>
+
+</database>

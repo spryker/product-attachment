@@ -1,0 +1,57 @@
+{% set prototype %}
+    <div class="attachment-item m-b-md">
+        <div class="row">
+            <div class="col-md-4">
+                {{ form_row(form[formKey].vars.prototype.label) }}
+            </div>
+            <div class="col-md-6">
+                {{ form_row(form[formKey].vars.prototype.url) }}
+            </div>
+            <div class="col-md-2">
+                {{ form_row(form[formKey].vars.prototype.sort_order) }}
+            </div>
+        </div>
+
+        {{ form_row(form[formKey].vars.prototype.id_product_attachment) }}
+        {{ form_row(form[formKey].vars.prototype.fk_locale) }}
+
+        <button type="button" class="btn btn-xs btn-danger remove-attachment m-t-sm">
+            <i class="fa fa-trash"></i> {{ 'Remove' | trans }}
+        </button>
+    </div>
+{% endset %}
+
+<div class="attachment-container" data-attachment-prototype="{{ prototype | e }}">
+    {% for attachment in form[formKey] %}
+        {% if not attachment.vars.value.id_product_attachment and attachment.parent.parent.vars.valid %}
+            {% do attachment.setRendered %}
+        {% endif %}
+
+        {% if not attachment.isRendered %}
+            <div class="attachment-item m-b-md">
+                <div class="row">
+                    <div class="col-md-4">
+                        {{ form_row(attachment.label) }}
+                    </div>
+                    <div class="col-md-6">
+                        {{ form_row(attachment.url) }}
+                    </div>
+                    <div class="col-md-2">
+                        {{ form_row(attachment.sort_order) }}
+                    </div>
+                </div>
+
+                {{ form_row(attachment.id_product_attachment) }}
+                {{ form_row(attachment.fk_locale) }}
+
+                <button type="button" class="btn btn-xs btn-danger remove-attachment m-t-sm">
+                    <i class="fa fa-trash"></i> {{ 'Remove' | trans }}
+                </button>
+            </div>
+        {% endif %}
+    {% endfor %}
+
+    <button type="button" class="btn btn-primary btn-sm add-another-attachment m-t-md">
+        <i class="fa fa-plus"></i> {{ 'Add Attachment' | trans }}
+    </button>
+</div>

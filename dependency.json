@@ -1,0 +1,6 @@
+{
+    "include": {
+        "spryker/transfer": "Provides transfer objects definition with strict types functionality.",
+        "spryker/translator": "Provides translation functionality like trans function in Twig templates."
+    }
+}

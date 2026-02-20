@@ -1,0 +1,4 @@
+"Product Attachments","Product Attachments"
+"Add URL-based attachments for different locales.","Add URL-based attachments for different locales."
+"Default attachments: Always displayed on the Product Detail Page (PDP), regardless of the user’s locale.","Default attachments: Always displayed on the Product Detail Page (PDP), regardless of the user’s locale."
+"Localized attachments: Displayed on the PDP only when they match the user’s selected locale. Shown in addition to default attachments.","Localized attachments: Displayed on the PDP only when they match the user’s selected locale. Shown in addition to default attachments."

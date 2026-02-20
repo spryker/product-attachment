@@ -1,0 +1,4 @@
+"Product Attachments",Produktaufsätze
+"Add URL-based attachments for different locales.","URL-basierte Anhänge für verschiedene Gebietsschemata hinzufügen."
+"Default attachments: Always displayed on the Product Detail Page (PDP), regardless of the user’s locale.","Standardanhänge: Immer auf der Produktdetailseite (PDP) angezeigt, unabhängig vom Gebietsschema des Benutzers."
+"Localized attachments: Displayed on the PDP only when they match the user’s selected locale. Shown in addition to default attachments.","Lokalisierte Anhänge: Nur auf der PDP angezeigt, wenn sie mit dem ausgewählten Gebietsschema des Benutzers übereinstimmen. Werden zusätzlich zu den Standardanhängen angezeigt."
