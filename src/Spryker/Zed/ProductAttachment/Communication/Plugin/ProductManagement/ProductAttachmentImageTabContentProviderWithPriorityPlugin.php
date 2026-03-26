@@ -9,17 +9,21 @@ namespace Spryker\Zed\ProductAttachment\Communication\Plugin\ProductManagement;
 
 use Generated\Shared\Transfer\ProductAbstractTransfer;
 use Spryker\Zed\Kernel\Communication\AbstractPlugin;
-use Spryker\Zed\ProductManagementExtension\Dependency\Plugin\ProductAbstractFormTabContentProviderPluginInterface;
+use Spryker\Zed\ProductManagementExtension\Dependency\Plugin\ProductAbstractFormTabContentProviderWithPriorityPluginInterface;
 
 /**
- * @deprecated Use {@link \Spryker\Zed\ProductAttachment\Communication\Plugin\ProductManagement\ProductAttachmentImageTabContentProviderWithPriorityPlugin} instead.
- *
  * @method \Spryker\Zed\ProductAttachment\Business\ProductAttachmentFacadeInterface getFacade()
  * @method \Spryker\Zed\ProductAttachment\ProductAttachmentConfig getConfig()
  * @method \Spryker\Zed\ProductAttachment\Communication\ProductAttachmentCommunicationFactory getFactory()
  */
-class ProductAttachmentImageTabContentProviderPlugin extends AbstractPlugin implements ProductAbstractFormTabContentProviderPluginInterface
+class ProductAttachmentImageTabContentProviderWithPriorityPlugin extends AbstractPlugin implements ProductAbstractFormTabContentProviderWithPriorityPluginInterface
 {
+    protected const string TAB_NAME = 'image';
+
+    protected const int PRIORITY = 10;
+
+    protected const string TEMPLATE_PATH = '@ProductAttachment/Product/_partials/product-management-attachment-section.twig';
+
     /**
      * {@inheritDoc}
      * - Returns 'image' as the tab name.
@@ -31,7 +35,20 @@ class ProductAttachmentImageTabContentProviderPlugin extends AbstractPlugin impl
      */
     public function getTabName(): string
     {
-        return 'image';
+        return static::TAB_NAME;
+    }
+
+    /**
+     * {@inheritDoc}
+     * - Returns the rendering priority within the image tab.
+     *
+     * @api
+     *
+     * @return int
+     */
+    public function getPriority(): int
+    {
+        return static::PRIORITY;
     }
 
     /**
@@ -46,8 +63,6 @@ class ProductAttachmentImageTabContentProviderPlugin extends AbstractPlugin impl
      */
     public function provideTabContent(?ProductAbstractTransfer $productAbstractTransfer = null): array
     {
-        return [
-            '@ProductAttachment/Product/_partials/product-management-attachment-section.twig',
-        ];
+        return [static::TEMPLATE_PATH];
     }
 }
