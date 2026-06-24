@@ -12,8 +12,14 @@ use Spryker\Zed\Kernel\AbstractBundleConfig;
 
 class ProductAttachmentConfig extends AbstractBundleConfig
 {
+    /**
+     * @api
+     */
     public const string IMPORT_TYPE_PRODUCT_ATTACHMENT = 'product-attachment';
 
+    /**
+     * @api
+     */
     public const int IMPORT_BULK_SIZE = 1000;
 
     protected const string MODULE_NAME = 'ProductAttachment';
