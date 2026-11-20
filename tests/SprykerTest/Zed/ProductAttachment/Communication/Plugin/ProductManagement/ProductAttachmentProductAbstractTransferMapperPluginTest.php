@@ -42,6 +42,8 @@ class ProductAttachmentProductAbstractTransferMapperPluginTest extends Unit
 
     protected const int ID_LOCALE_EN = 66;
 
+    protected const string FIELD_UNKNOWN = 'unknown_extension_field';
+
     protected ProductAttachmentCommunicationTester $tester;
 
     protected function setUp(): void
@@ -153,6 +155,23 @@ class ProductAttachmentProductAbstractTransferMapperPluginTest extends Unit
         );
     }
 
+    public function testGivenRowsWithExtensionKeysWhenMapThenCoreValuesAreKeptAndUnknownKeysAreIgnored(): void
+    {
+        // Arrange
+        $formData = [
+            $this->getSectionFormName(static::LOCALE_NAME_DE) => [
+                $this->createAttachmentFormData('Handbuch', 'https://example.com/handbuch.pdf', 3) + [static::FIELD_UNKNOWN => 'value', AttachmentForm::FIELD_FK_LOCALE => static::ID_LOCALE_EN],
+                $this->createAttachmentFormData('', 'https://example.com/without-label.pdf', 4) + [static::FIELD_UNKNOWN => 'value'],
+            ],
+        ];
+
+        // Act
+        $productAbstractTransfer = (new ProductAttachmentProductAbstractTransferMapperPlugin())->map($formData, new ProductAbstractTransfer());
+
+        // Assert
+        $this->assertSame([[static::ID_LOCALE_DE, 'Handbuch', 'https://example.com/handbuch.pdf', 3]], $this->extractAttachments($productAbstractTransfer));
+    }
+
     protected function getSectionFormName(string $localeName): string
     {
         return sprintf('%s_%s', (new ProductAttachmentConfig())->getAttachmentFormName(), $localeName);
@@ -175,7 +194,7 @@ class ProductAttachmentProductAbstractTransferMapperPluginTest extends Unit
      */
     protected function extractAttachments(ProductAbstractTransfer $productAbstractTransfer): array
     {
-        return array_map(
+        return array_values(array_map(
             static fn (ProductAttachmentTransfer $productAttachmentTransfer): array => [
                 $productAttachmentTransfer->getFkLocale(),
                 $productAttachmentTransfer->getLabel(),
@@ -183,6 +202,6 @@ class ProductAttachmentProductAbstractTransferMapperPluginTest extends Unit
                 $productAttachmentTransfer->getSortOrder(),
             ],
             $productAbstractTransfer->getProductAttachments()->getArrayCopy(),
-        );
+        ));
     }
 }

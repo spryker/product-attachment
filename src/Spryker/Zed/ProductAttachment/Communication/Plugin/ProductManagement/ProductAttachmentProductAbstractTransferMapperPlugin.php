@@ -23,9 +23,21 @@ use Spryker\Zed\ProductManagementExtension\Dependency\Plugin\ProductAbstractTran
 class ProductAttachmentProductAbstractTransferMapperPlugin extends AbstractPlugin implements ProductAbstractTransferMapperPluginInterface
 {
     /**
+     * @var list<string>
+     */
+    protected const array CORE_FIELDS = [
+        AttachmentForm::FIELD_ID_PRODUCT_ATTACHMENT,
+        AttachmentForm::FIELD_FK_LOCALE,
+        AttachmentForm::FIELD_LABEL,
+        AttachmentForm::FIELD_URL,
+        AttachmentForm::FIELD_SORT_ORDER,
+    ];
+
+    /**
      * {@inheritDoc}
      * - Maps form data to ProductAbstractTransfer.
      * - Builds product attachment collection from form data.
+     * - Maps the other keys of each attachment row (fields of `ProductAttachmentFormExpanderPluginInterface` plugins) to the `ProductAttachmentTransfer` properties; ignores unknown keys.
      * - Sets the attachment collection on ProductAbstractTransfer.
      *
      * @api
@@ -79,7 +91,8 @@ class ProductAttachmentProductAbstractTransferMapperPlugin extends AbstractPlugi
                     ->setFkLocale($localeTransfer->getIdLocale())
                     ->setLabel($attachmentData[AttachmentForm::FIELD_LABEL])
                     ->setUrl($attachmentData[AttachmentForm::FIELD_URL])
-                    ->setSortOrder($attachmentData[AttachmentForm::FIELD_SORT_ORDER] ?? 0);
+                    ->setSortOrder($attachmentData[AttachmentForm::FIELD_SORT_ORDER] ?? 0)
+                    ->fromArray(array_diff_key($attachmentData, array_flip(static::CORE_FIELDS)), true);
 
                 $attachments[] = $attachmentTransfer;
             }

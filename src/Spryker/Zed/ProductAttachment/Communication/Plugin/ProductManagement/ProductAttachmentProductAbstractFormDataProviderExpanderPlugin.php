@@ -34,6 +34,7 @@ class ProductAttachmentProductAbstractFormDataProviderExpanderPlugin extends Abs
      * - Expands product abstract form data with attachment data.
      * - Gets attachments for the product abstract from database.
      * - Groups attachments by locale (default and localized versions).
+     * - Each attachment row holds every `ProductAttachmentTransfer` property in snake_case, so fields of `ProductAttachmentFormExpanderPluginInterface` plugins get their data.
      *
      * @api
      *
@@ -111,13 +112,13 @@ class ProductAttachmentProductAbstractFormDataProviderExpanderPlugin extends Abs
         foreach ($productAttachmentTransfers as $attachmentTransfer) {
             $fkLocale = $attachmentTransfer->getFkLocale();
 
-            $attachmentData = [
+            $attachmentData = array_merge($attachmentTransfer->toArray(), [
                 AttachmentForm::FIELD_ID_PRODUCT_ATTACHMENT => $attachmentTransfer->getIdProductAttachment(),
                 AttachmentForm::FIELD_FK_LOCALE => $fkLocale,
                 AttachmentForm::FIELD_LABEL => $attachmentTransfer->getLabel(),
                 AttachmentForm::FIELD_URL => $attachmentTransfer->getUrl(),
                 AttachmentForm::FIELD_SORT_ORDER => $attachmentTransfer->getSortOrder(),
-            ];
+            ]);
 
             $localeKey = $fkLocale !== null && isset($groupedNamesByLocales[$fkLocale])
                 ? $this->getAttachmentFormName($groupedNamesByLocales[$fkLocale])

@@ -9,11 +9,17 @@ declare(strict_types=1);
 
 namespace SprykerTest\Zed\ProductAttachment\Business;
 
+use ArrayObject;
 use Codeception\Test\Unit;
 use Generated\Shared\Transfer\LocaleTransfer;
 use Generated\Shared\Transfer\ProductAttachmentCollectionTransfer;
 use Generated\Shared\Transfer\ProductAttachmentTransfer;
+use RuntimeException;
+use Spryker\Zed\ProductAttachment\ProductAttachmentDependencyProvider;
+use Spryker\Zed\ProductAttachmentExtension\Dependency\Plugin\ProductAttachmentCollectionExpanderPluginInterface;
+use Spryker\Zed\ProductAttachmentExtension\Dependency\Plugin\ProductAttachmentCollectionPostSavePluginInterface;
 use SprykerTest\Zed\ProductAttachment\ProductAttachmentBusinessTester;
+use Throwable;
 
 /**
  * Auto-generated group annotations
@@ -246,6 +252,251 @@ class ProductAttachmentFacadeTest extends Unit
         $this->assertSame('Attachment A Updated', $this->tester->findProductAttachmentLabel($attachmentA->getIdProductAttachmentOrFail()));
         $this->assertNotNull($this->tester->findProductAttachmentIdByLabel('Attachment C'));
         $this->tester->assertProductAbstractAttachmentRelationNotExists($productAbstract->getIdProductAbstractOrFail(), $attachmentB->getIdProductAttachmentOrFail());
+    }
+
+    public function testGivenNoExpanderPluginsWhenGetCollectionThenReturnsUnchangedCoreAttachments(): void
+    {
+        // Arrange
+        $this->tester->setDependency(ProductAttachmentDependencyProvider::PLUGINS_PRODUCT_ATTACHMENT_COLLECTION_EXPANDER, []);
+        $productAbstract = $this->tester->haveProductAbstractForAttachment();
+        $attachments = $this->haveRelatedAttachments($productAbstract->getIdProductAbstractOrFail(), ['Manual First', 'Manual Second']);
+
+        // Act
+        $collectionTransfer = $this->tester->getFacade()->getProductAttachmentCollection(
+            $this->tester->buildProductAttachmentCriteria([$productAbstract->getIdProductAbstractOrFail()]),
+        );
+
+        // Assert
+        $this->assertEqualsCanonicalizing($this->extractAttachmentData($attachments), $this->extractAttachmentData($collectionTransfer->getProductAttachments()->getArrayCopy()));
+    }
+
+    public function testGivenExpanderPluginsWhenGetCollectionThenEachPluginExpandsFullCollectionOnceInRegisteredOrder(): void
+    {
+        // Arrange
+        $productAbstract = $this->tester->haveProductAbstractForAttachment();
+        $this->haveRelatedAttachments($productAbstract->getIdProductAbstractOrFail(), ['Manual First', 'Manual Second']);
+        $pluginCalls = $this->haveLabelSuffixExpanderPlugins(['-first', '-second']);
+
+        // Act
+        $collectionTransfer = $this->tester->getFacade()->getProductAttachmentCollection(
+            $this->tester->buildProductAttachmentCriteria([$productAbstract->getIdProductAbstractOrFail()]),
+        );
+
+        // Assert
+        $this->assertSame(['-first:2', '-second:2'], $pluginCalls->getArrayCopy());
+        $this->assertEqualsCanonicalizing(['Manual First-first-second', 'Manual Second-first-second'], $this->extractAttachmentLabels($collectionTransfer));
+    }
+
+    public function testGivenNoPostSavePluginsWhenSaveCollectionThenStoresAttachmentsAndRelations(): void
+    {
+        // Arrange
+        $this->tester->setDependency(ProductAttachmentDependencyProvider::PLUGINS_PRODUCT_ATTACHMENT_COLLECTION_POST_SAVE, []);
+        $productAbstract = $this->tester->haveProductAbstractForAttachment();
+        $productAbstract->addProductAttachment($this->tester->buildProductAttachment([ProductAttachmentTransfer::LABEL => 'Manual No Plugin']));
+
+        // Act
+        $this->tester->getFacade()->saveProductAbstractAttachmentCollection($productAbstract);
+
+        // Assert
+        $this->tester->assertProductAbstractAttachmentCount($productAbstract->getIdProductAbstractOrFail(), 1);
+        $this->assertNotNull($this->tester->findProductAttachmentIdByLabel('Manual No Plugin'));
+    }
+
+    public function testGivenPostSavePluginWhenSaveCollectionThenPluginRunsOnceWithIdsOfExistingAndNewAttachments(): void
+    {
+        // Arrange
+        $productAbstract = $this->tester->haveProductAbstractForAttachment();
+        $existingAttachment = $this->haveRelatedAttachments($productAbstract->getIdProductAbstractOrFail(), ['Manual Existing'])[0];
+        $productAbstract->addProductAttachment($existingAttachment)->addProductAttachment($this->tester->buildProductAttachment([ProductAttachmentTransfer::LABEL => 'Manual New']));
+        $postSaveCalls = $this->havePostSavePluginSpy();
+
+        // Act
+        $this->tester->getFacade()->saveProductAbstractAttachmentCollection($productAbstract);
+
+        // Assert
+        $this->assertCount(1, $postSaveCalls);
+        $this->assertSame([$existingAttachment->getIdProductAttachmentOrFail(), $this->tester->findProductAttachmentIdByLabel('Manual New')], $this->extractAttachmentIds($postSaveCalls[0]));
+    }
+
+    public function testGivenEmptyAttachmentListWhenSaveCollectionThenPluginRunsOnceWithEmptyCollectionAndRelationsAreRemoved(): void
+    {
+        // Arrange
+        $productAbstract = $this->tester->haveProductAbstractForAttachment();
+        $attachment = $this->haveRelatedAttachments($productAbstract->getIdProductAbstractOrFail(), ['Manual Removed'])[0];
+        $postSaveCalls = $this->havePostSavePluginSpy();
+
+        // Act
+        $this->tester->getFacade()->saveProductAbstractAttachmentCollection($productAbstract);
+
+        // Assert
+        $this->assertCount(1, $postSaveCalls);
+        $this->assertCount(0, $postSaveCalls[0]->getProductAttachments());
+        $this->tester->assertProductAbstractAttachmentRelationNotExists($productAbstract->getIdProductAbstractOrFail(), $attachment->getIdProductAttachmentOrFail());
+    }
+
+    /**
+     * @disableTransaction
+     */
+    public function testGivenFailingPostSavePluginWhenSaveCollectionThenAttachmentsAndRelationsAreRolledBack(): void
+    {
+        // Arrange
+        $productAbstract = $this->tester->haveProductAbstractForAttachment();
+        $productAbstract->addProductAttachment($this->tester->buildProductAttachment([ProductAttachmentTransfer::LABEL => uniqid('Manual Rolled Back ', true)]));
+        $this->tester->setDependency(ProductAttachmentDependencyProvider::PLUGINS_PRODUCT_ATTACHMENT_COLLECTION_POST_SAVE, [$this->createFailingPostSavePlugin()]);
+
+        // Act
+        $throwable = $this->catchThrowable(fn () => $this->tester->getFacade()->saveProductAbstractAttachmentCollection($productAbstract));
+
+        // Assert
+        $this->assertInstanceOf(RuntimeException::class, $throwable);
+        $this->tester->assertProductAbstractAttachmentCount($productAbstract->getIdProductAbstractOrFail(), 0);
+        $this->assertNull($this->tester->findProductAttachmentIdByLabel($productAbstract->getProductAttachments()->offsetGet(0)->getLabelOrFail()));
+    }
+
+    /**
+     * @param array<string> $labels
+     *
+     * @return array<\Generated\Shared\Transfer\ProductAttachmentTransfer>
+     */
+    protected function haveRelatedAttachments(int $idProductAbstract, array $labels): array
+    {
+        $attachments = [];
+
+        foreach ($labels as $index => $label) {
+            $attachment = $this->tester->haveProductAttachment([ProductAttachmentTransfer::LABEL => $label]);
+            $this->tester->haveProductAbstractAttachmentRelation($idProductAbstract, $attachment->getIdProductAttachmentOrFail(), $index + 1);
+            $attachments[] = $attachment;
+        }
+
+        return $attachments;
+    }
+
+    /**
+     * @param array<string> $suffixes
+     *
+     * @return \ArrayObject<int, string>
+     */
+    protected function haveLabelSuffixExpanderPlugins(array $suffixes): ArrayObject
+    {
+        $pluginCalls = new ArrayObject();
+        $plugins = [];
+
+        foreach ($suffixes as $suffix) {
+            $plugins[] = $this->createLabelSuffixExpanderPlugin($suffix, $pluginCalls);
+        }
+
+        $this->tester->setDependency(ProductAttachmentDependencyProvider::PLUGINS_PRODUCT_ATTACHMENT_COLLECTION_EXPANDER, $plugins);
+
+        return $pluginCalls;
+    }
+
+    /**
+     * @param \ArrayObject<int, string> $pluginCalls
+     */
+    protected function createLabelSuffixExpanderPlugin(string $suffix, ArrayObject $pluginCalls): ProductAttachmentCollectionExpanderPluginInterface
+    {
+        return new class ($suffix, $pluginCalls) implements ProductAttachmentCollectionExpanderPluginInterface {
+            /**
+             * @param \ArrayObject<int, string> $pluginCalls
+             */
+            public function __construct(protected string $suffix, protected ArrayObject $pluginCalls)
+            {
+            }
+
+            public function expand(ProductAttachmentCollectionTransfer $productAttachmentCollectionTransfer): ProductAttachmentCollectionTransfer
+            {
+                $this->pluginCalls->append($this->suffix . ':' . $productAttachmentCollectionTransfer->getProductAttachments()->count());
+
+                foreach ($productAttachmentCollectionTransfer->getProductAttachments() as $productAttachmentTransfer) {
+                    $productAttachmentTransfer->setLabel($productAttachmentTransfer->getLabelOrFail() . $this->suffix);
+                }
+
+                return $productAttachmentCollectionTransfer;
+            }
+        };
+    }
+
+    /**
+     * @return \ArrayObject<int, \Generated\Shared\Transfer\ProductAttachmentCollectionTransfer>
+     */
+    protected function havePostSavePluginSpy(): ArrayObject
+    {
+        $postSaveCalls = new ArrayObject();
+        $this->tester->setDependency(ProductAttachmentDependencyProvider::PLUGINS_PRODUCT_ATTACHMENT_COLLECTION_POST_SAVE, [
+            new class ($postSaveCalls) implements ProductAttachmentCollectionPostSavePluginInterface {
+                /**
+                 * @param \ArrayObject<int, \Generated\Shared\Transfer\ProductAttachmentCollectionTransfer> $postSaveCalls
+                 */
+                public function __construct(protected ArrayObject $postSaveCalls)
+                {
+                }
+
+                public function postSave(ProductAttachmentCollectionTransfer $productAttachmentCollectionTransfer): ProductAttachmentCollectionTransfer
+                {
+                    $this->postSaveCalls->append($productAttachmentCollectionTransfer);
+
+                    return $productAttachmentCollectionTransfer;
+                }
+            },
+        ]);
+
+        return $postSaveCalls;
+    }
+
+    protected function createFailingPostSavePlugin(): ProductAttachmentCollectionPostSavePluginInterface
+    {
+        return new class () implements ProductAttachmentCollectionPostSavePluginInterface {
+            public function postSave(ProductAttachmentCollectionTransfer $productAttachmentCollectionTransfer): ProductAttachmentCollectionTransfer
+            {
+                throw new RuntimeException('Post-save failure.');
+            }
+        };
+    }
+
+    protected function catchThrowable(callable $callable): ?Throwable
+    {
+        try {
+            $callable();
+        } catch (Throwable $throwable) {
+            return $throwable;
+        }
+
+        return null;
+    }
+
+    /**
+     * @return array<string>
+     */
+    protected function extractAttachmentLabels(ProductAttachmentCollectionTransfer $collectionTransfer): array
+    {
+        $labels = [];
+
+        foreach ($collectionTransfer->getProductAttachments() as $attachment) {
+            $labels[] = $attachment->getLabelOrFail();
+        }
+
+        return $labels;
+    }
+
+    /**
+     * @param array<\Generated\Shared\Transfer\ProductAttachmentTransfer> $attachments
+     *
+     * @return array<array<string, mixed>>
+     */
+    protected function extractAttachmentData(array $attachments): array
+    {
+        $attachmentData = [];
+
+        foreach ($attachments as $attachment) {
+            $attachmentData[] = [
+                ProductAttachmentTransfer::ID_PRODUCT_ATTACHMENT => $attachment->getIdProductAttachment(),
+                ProductAttachmentTransfer::LABEL => $attachment->getLabel(),
+                ProductAttachmentTransfer::URL => $attachment->getUrl(),
+                ProductAttachmentTransfer::FK_LOCALE => $attachment->getFkLocale(),
+            ];
+        }
+
+        return $attachmentData;
     }
 
     /**

@@ -9,6 +9,7 @@ namespace Spryker\Zed\ProductAttachment\Business\Writer;
 
 use ArrayObject;
 use Generated\Shared\Transfer\ProductAbstractTransfer;
+use Generated\Shared\Transfer\ProductAttachmentCollectionTransfer;
 use Generated\Shared\Transfer\ProductAttachmentConditionTransfer;
 use Generated\Shared\Transfer\ProductAttachmentProductAbstractTransfer;
 use Spryker\Zed\Kernel\Persistence\EntityManager\TransactionTrait;
@@ -21,11 +22,19 @@ class ProductAbstractAttachmentCollectionWriter implements ProductAbstractAttach
 {
     use TransactionTrait;
 
+    /**
+     * @param \Spryker\Zed\ProductAttachment\Persistence\ProductAttachmentRepositoryInterface $repository
+     * @param \Spryker\Zed\ProductAttachment\Persistence\ProductAttachmentEntityManagerInterface $entityManager
+     * @param \Spryker\Zed\ProductAttachment\Business\Attachment\AttachmentCreatorInterface $attachmentCreator
+     * @param \Spryker\Zed\ProductAttachment\Business\Attachment\AttachmentUpdaterInterface $attachmentUpdater
+     * @param list<\Spryker\Zed\ProductAttachmentExtension\Dependency\Plugin\ProductAttachmentCollectionPostSavePluginInterface> $productAttachmentCollectionPostSavePlugins
+     */
     public function __construct(
         protected ProductAttachmentRepositoryInterface $repository,
         protected ProductAttachmentEntityManagerInterface $entityManager,
         protected AttachmentCreatorInterface $attachmentCreator,
         protected AttachmentUpdaterInterface $attachmentUpdater,
+        protected array $productAttachmentCollectionPostSavePlugins = [],
     ) {
     }
 
@@ -37,6 +46,12 @@ class ProductAbstractAttachmentCollectionWriter implements ProductAbstractAttach
     }
 
     protected function executeSaveProductAbstractAttachmentsTransaction(ProductAbstractTransfer $productAbstractTransfer): void
+    {
+        $this->saveProductAbstractAttachmentsWithRelations($productAbstractTransfer);
+        $this->executeProductAttachmentCollectionPostSavePlugins($productAbstractTransfer->getProductAttachments());
+    }
+
+    protected function saveProductAbstractAttachmentsWithRelations(ProductAbstractTransfer $productAbstractTransfer): void
     {
         $idProductAbstract = $productAbstractTransfer->getIdProductAbstractOrFail();
         $incomingProductAttachmentTransfers = $productAbstractTransfer->getProductAttachments();
@@ -66,6 +81,19 @@ class ProductAbstractAttachmentCollectionWriter implements ProductAbstractAttach
             $createdAttachment = $this->attachmentCreator->createAttachment($productAttachmentTransfer);
 
             $this->saveRelation($createdAttachment->getIdProductAttachmentOrFail(), $idProductAbstract, $sortOrder);
+        }
+    }
+
+    /**
+     * @param \ArrayObject<array-key, \Generated\Shared\Transfer\ProductAttachmentTransfer> $productAttachmentTransfers
+     */
+    protected function executeProductAttachmentCollectionPostSavePlugins(ArrayObject $productAttachmentTransfers): void
+    {
+        $productAttachmentCollectionTransfer = (new ProductAttachmentCollectionTransfer())
+            ->setProductAttachments($productAttachmentTransfers);
+
+        foreach ($this->productAttachmentCollectionPostSavePlugins as $productAttachmentCollectionPostSavePlugin) {
+            $productAttachmentCollectionTransfer = $productAttachmentCollectionPostSavePlugin->postSave($productAttachmentCollectionTransfer);
         }
     }
 

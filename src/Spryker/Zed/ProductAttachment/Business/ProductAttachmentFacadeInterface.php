@@ -16,6 +16,7 @@ interface ProductAttachmentFacadeInterface
     /**
      * Specification:
      * - Retrieves a collection of product attachments based on the provided criteria.
+     * - Executes the stack of {@link \Spryker\Zed\ProductAttachmentExtension\Dependency\Plugin\ProductAttachmentCollectionExpanderPluginInterface} plugins.
      * - Returns a ProductAttachmentCollectionTransfer containing the matched attachments.
      *
      * @api
@@ -32,6 +33,9 @@ interface ProductAttachmentFacadeInterface
      * Specification:
      * - Saves the attachment collection for a product abstract.
      * - Persists the attachment relationships to the database.
+     * - Executes the stack of {@link \Spryker\Zed\ProductAttachmentExtension\Dependency\Plugin\ProductAttachmentCollectionPostSavePluginInterface} plugins once in the same transaction.
+     * - Passes all saved attachments with `ProductAttachmentTransfer.idProductAttachment` set to the plugins; passes an empty collection when the attachment list is empty.
+     * - Each plugin receives the collection the previous plugin returned.
      *
      * @api
      *

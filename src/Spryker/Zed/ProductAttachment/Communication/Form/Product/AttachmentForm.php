@@ -16,6 +16,11 @@ use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 use Symfony\Component\Validator\Constraints\NotBlank;
 
+/**
+ * @method \Spryker\Zed\ProductAttachment\Communication\ProductAttachmentCommunicationFactory getFactory()
+ * @method \Spryker\Zed\ProductAttachment\Business\ProductAttachmentFacadeInterface getFacade()
+ * @method \Spryker\Zed\ProductAttachment\ProductAttachmentConfig getConfig()
+ */
 class AttachmentForm extends AbstractType
 {
     public const string FIELD_ID_PRODUCT_ATTACHMENT = 'id_product_attachment';
@@ -69,6 +74,20 @@ class AttachmentForm extends AbstractType
             ->addLabelField($builder)
             ->addUrlField($builder)
             ->addSortOrderField($builder);
+
+        $this->executeProductAttachmentFormExpanderPlugins($builder, $options);
+    }
+
+    /**
+     * @param array<string, mixed> $options
+     */
+    protected function executeProductAttachmentFormExpanderPlugins(FormBuilderInterface $builder, array $options): FormBuilderInterface
+    {
+        foreach ($this->getFactory()->getProductAttachmentFormExpanderPlugins() as $productAttachmentFormExpanderPlugin) {
+            $builder = $productAttachmentFormExpanderPlugin->expand($builder, $options);
+        }
+
+        return $builder;
     }
 
     protected function addIdProductAttachmentField(FormBuilderInterface $builder): static

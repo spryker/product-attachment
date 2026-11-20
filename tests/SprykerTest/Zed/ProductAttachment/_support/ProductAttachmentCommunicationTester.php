@@ -10,7 +10,11 @@ declare(strict_types=1);
 namespace SprykerTest\Zed\ProductAttachment;
 
 use Codeception\Actor;
+use Generated\Shared\Transfer\LocaleTransfer;
+use Generated\Shared\Transfer\ProductAttachmentTransfer;
 use Orm\Zed\Locale\Persistence\SpyLocaleQuery;
+use Orm\Zed\ProductAttachment\Persistence\SpyProductAttachment;
+use Orm\Zed\ProductAttachment\Persistence\SpyProductAttachmentProductAbstract;
 use Orm\Zed\ProductAttachment\Persistence\SpyProductAttachmentProductAbstractQuery;
 use Orm\Zed\ProductAttachment\Persistence\SpyProductAttachmentQuery;
 
@@ -69,6 +73,37 @@ class ProductAttachmentCommunicationTester extends Actor
             ->findOne();
 
         return $localeEntity?->getIdLocale();
+    }
+
+    public function haveProductAttachmentLinkedToProductAbstract(
+        int $idProductAbstract,
+        string $label,
+        ?int $idLocale,
+        int $sortOrder
+    ): ProductAttachmentTransfer {
+        $productAttachmentEntity = (new SpyProductAttachment())
+            ->setFkLocale($idLocale)
+            ->setLabel($label)
+            ->setUrl(sprintf('https://example.com/%s.pdf', uniqid()));
+        $productAttachmentEntity->save();
+
+        (new SpyProductAttachmentProductAbstract())
+            ->setFkProductAbstract($idProductAbstract)
+            ->setFkProductAttachment($productAttachmentEntity->getIdProductAttachment())
+            ->setOrder($sortOrder)
+            ->save();
+
+        return (new ProductAttachmentTransfer())
+            ->setIdProductAttachment($productAttachmentEntity->getIdProductAttachment())
+            ->setFkLocale($productAttachmentEntity->getFkLocale())
+            ->setLabel($productAttachmentEntity->getLabel())
+            ->setUrl($productAttachmentEntity->getUrl())
+            ->setSortOrder($sortOrder);
+    }
+
+    public function getFirstStoreLocale(): LocaleTransfer
+    {
+        return array_values($this->getLocator()->locale()->facade()->getLocaleCollection())[0];
     }
 
     protected function cleanupProductAttachments(): void

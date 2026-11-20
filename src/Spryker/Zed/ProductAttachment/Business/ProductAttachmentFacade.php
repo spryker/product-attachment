@@ -26,7 +26,9 @@ class ProductAttachmentFacade extends AbstractFacade implements ProductAttachmen
     public function getProductAttachmentCollection(
         ProductAttachmentCriteriaTransfer $productAttachmentCriteriaTransfer,
     ): ProductAttachmentCollectionTransfer {
-        return $this->getRepository()->getProductAttachmentCollection($productAttachmentCriteriaTransfer);
+        return $this->getFactory()
+            ->createProductAttachmentReader()
+            ->getProductAttachmentCollection($productAttachmentCriteriaTransfer);
     }
 
     public function saveProductAbstractAttachmentCollection(ProductAbstractTransfer $productAbstractTransfer): void

@@ -14,6 +14,7 @@
 
         {{ form_row(form[formKey].vars.prototype.id_product_attachment) }}
         {{ form_row(form[formKey].vars.prototype.fk_locale) }}
+        {{ form_rest(form[formKey].vars.prototype) }}
 
         <button type="button" class="btn btn-xs btn-danger remove-attachment m-t-sm">
             <i class="fa fa-trash"></i> {{ 'Remove' | trans }}
@@ -43,6 +44,7 @@
 
                 {{ form_row(attachment.id_product_attachment) }}
                 {{ form_row(attachment.fk_locale) }}
+                {{ form_rest(attachment) }}
 
                 <button type="button" class="btn btn-xs btn-danger remove-attachment m-t-sm">
                     <i class="fa fa-trash"></i> {{ 'Remove' | trans }}

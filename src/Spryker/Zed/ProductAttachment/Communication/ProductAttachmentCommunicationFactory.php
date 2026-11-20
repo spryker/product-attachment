@@ -17,4 +17,12 @@ class ProductAttachmentCommunicationFactory extends AbstractCommunicationFactory
     {
         return $this->getProvidedDependency(ProductAttachmentDependencyProvider::FACADE_LOCALE);
     }
+
+    /**
+     * @return list<\Spryker\Zed\ProductAttachmentExtension\Dependency\Plugin\ProductAttachmentFormExpanderPluginInterface>
+     */
+    public function getProductAttachmentFormExpanderPlugins(): array
+    {
+        return $this->getProvidedDependency(ProductAttachmentDependencyProvider::PLUGINS_PRODUCT_ATTACHMENT_FORM_EXPANDER);
+    }
 }

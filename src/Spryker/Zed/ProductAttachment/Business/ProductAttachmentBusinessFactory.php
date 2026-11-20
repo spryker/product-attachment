@@ -24,6 +24,8 @@ use Spryker\Zed\ProductAttachment\Business\Attachment\AttachmentUpdaterInterface
 use Spryker\Zed\ProductAttachment\Business\DataImport\Step\LocaleNameToIdStep;
 use Spryker\Zed\ProductAttachment\Business\DataImport\Step\ProductAbstractSkuToIdStep;
 use Spryker\Zed\ProductAttachment\Business\DataImport\Step\ProductAttachmentWriterStep;
+use Spryker\Zed\ProductAttachment\Business\Reader\ProductAttachmentReader;
+use Spryker\Zed\ProductAttachment\Business\Reader\ProductAttachmentReaderInterface;
 use Spryker\Zed\ProductAttachment\Business\Writer\ProductAbstractAttachmentCollectionWriter;
 use Spryker\Zed\ProductAttachment\Business\Writer\ProductAbstractAttachmentCollectionWriterInterface;
 use Spryker\Zed\ProductAttachment\ProductAttachmentDependencyProvider;
@@ -58,6 +60,15 @@ class ProductAttachmentBusinessFactory extends AbstractBusinessFactory
             $this->getEntityManager(),
             $this->createAttachmentCreator(),
             $this->createAttachmentUpdater(),
+            $this->getProductAttachmentCollectionPostSavePlugins(),
+        );
+    }
+
+    public function createProductAttachmentReader(): ProductAttachmentReaderInterface
+    {
+        return new ProductAttachmentReader(
+            $this->getRepository(),
+            $this->getProductAttachmentCollectionExpanderPlugins(),
         );
     }
 
@@ -135,5 +146,21 @@ class ProductAttachmentBusinessFactory extends AbstractBusinessFactory
     public function getProductAttachmentProductAbstractQuery(): SpyProductAttachmentProductAbstractQuery
     {
         return SpyProductAttachmentProductAbstractQuery::create();
+    }
+
+    /**
+     * @return list<\Spryker\Zed\ProductAttachmentExtension\Dependency\Plugin\ProductAttachmentCollectionExpanderPluginInterface>
+     */
+    public function getProductAttachmentCollectionExpanderPlugins(): array
+    {
+        return $this->getProvidedDependency(ProductAttachmentDependencyProvider::PLUGINS_PRODUCT_ATTACHMENT_COLLECTION_EXPANDER);
+    }
+
+    /**
+     * @return list<\Spryker\Zed\ProductAttachmentExtension\Dependency\Plugin\ProductAttachmentCollectionPostSavePluginInterface>
+     */
+    public function getProductAttachmentCollectionPostSavePlugins(): array
+    {
+        return $this->getProvidedDependency(ProductAttachmentDependencyProvider::PLUGINS_PRODUCT_ATTACHMENT_COLLECTION_POST_SAVE);
     }
 }
